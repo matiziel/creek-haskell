@@ -4,7 +4,9 @@ module Board
     BoardSize,
     BoardCellIndex,
     generateBoard,
+    boardCellValueAt,
     setBoardCells,
+    replaceUknownCells,
   )
 where
 
@@ -32,3 +34,22 @@ setBoardCell b@(Board (height, width) cells) ((xarg, yarg), value) =
 
 setBoardCells :: Board -> [(BoardCellIndex, BoardCell)] -> Board
 setBoardCells = foldl setBoardCell
+
+replaceUknownCells :: Board -> Board
+replaceUknownCells b@(Board (height, width) cells) =
+  Board
+    (height, width)
+    [ [ ( if boardCellValueAt b (x, y) == Unknown
+            then Empty
+            else boardCellValueAt b (x, y)
+        )
+        | y <- [0 .. width - 1]
+      ]
+      | x <- [0 .. height - 1]
+    ]
+
+-- getCellsWithValue :: Board -> BoardCell -> [BoardCellIndex]
+-- getCellsWithValue (Board (height, width) cells) value = [(1, 1)]
+
+-- validateBoard :: Board -> Bool
+-- validateBoard b@(Board (height, width) cells)
