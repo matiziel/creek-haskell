@@ -17,7 +17,8 @@ main = do
   let knownSolved = solveKnownCells board rules
   let restRules = removeAppliedKnownRules knownSolved rules
   let patternsCombination = getPatternsCombinationForRules knownSolved restRules
-  print (solveRest knownSolved restRules)
+  let solved = solveRest knownSolved restRules
+  print solved
 
 getBoardSize :: Creek -> BoardSize
 getBoardSize (Creek size _) = size
@@ -81,7 +82,10 @@ removeAppliedKnownRules b rules = cornerRulesWithOne
     cornerRulesWithOne = filter (not . isCornerKnownRule b) edgeRulesWithTwo
 
 solveRest :: Board -> Rules -> Maybe Board
-solveRest b rules = solve (Just b) (getSequenceOfPatterns b rules) rules
+solveRest b rules =
+  case solve (Just b) (getSequenceOfPatterns b rules) rules of
+    Nothing -> Nothing
+    Just board -> Just (replaceUknownCells board)
 
 solve :: Maybe Board -> [Patterns] -> Rules -> Maybe Board
 solve Nothing _ _ = Nothing
