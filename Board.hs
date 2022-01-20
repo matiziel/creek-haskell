@@ -56,7 +56,6 @@ validateCreek :: Board -> Bool
 validateCreek b@(Board (height, width) _) = size creek == length emptyOrUnknownCells
   where
     emptyOrUnknownCells = getEmptyOrUnknownCells b
-    -- firstEmpty = head emptyOrUnknownCells
     creek = getCreekForValidation b [head emptyOrUnknownCells] empty
 
 getEmptyOrUnknownCells :: Board -> [BoardCellIndex]
@@ -94,6 +93,9 @@ getNeighbours b@(Board (height, width) cells) (x, y)
   | y == (width - 1) = [(x - 1, y), (x, y - 1), (x + 1, y)]
   | x == (height - 1) = [(x, y - 1), (x - 1, y), (x, y + 1)]
   | otherwise = [(x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y)]
+
+
+
 
 
 

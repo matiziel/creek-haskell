@@ -1,6 +1,5 @@
 import Board
 import Data.List
-import Distribution.TestSuite (Result (Error))
 import Rules
 import System.IO
 import Utils
@@ -17,7 +16,9 @@ main = do
   let rules = getRules creek
   let knownSolved = solveKnownCells board rules
   let restRules = removeAppliedKnownRules knownSolved rules
-  print (solveRest knownSolved restRules)
+  let patternsCombination = getPatternsCombinationForRules knownSolved restRules
+  -- print (combination 2 (getCellsForRuleApply board ((1, 3), 2)))
+  print (sequence patternsCombination)
 
 getBoardSize :: Creek -> BoardSize
 getBoardSize (Creek size _) = size
@@ -63,16 +64,15 @@ applyRuleToBoard :: Board -> Rule -> BoardCell -> Board
 applyRuleToBoard b rule value = setBoardCells b [(index, value) | index <- getCellsForRuleApply b rule]
 
 getCellsForRuleApply :: Board -> Rule -> [(Int, Int)]
-getCellsForRuleApply (Board (height, width) cells) ((x, y), val)
-  | x == 0 && y == 0 = [(0, 0)]
-  | x == height && y == height = [(height - 1, width - 1)]
-  | x == 0 && y == width = [(0, y - 1)]
-  | x == height && y == 0 = [(height - 1, 0)]
-  | x == 0 = [(0, y - 1), (0, y)]
-  | x == height = [(height - 1, y - 1), (height - 1, y)]
-  | y == 0 = [(x - 1, 0), (x, 0)]
-  | y == width = [(x - 1, width - 1), (x, width - 1)]
-  | otherwise = [(xarg, yarg) | xarg <- [(x - 1) .. x], yarg <- [(y - 1) .. y]]
+getCellsForRuleApply (Board (height, width) cells) ((x, y), val) =
+  [ (xarg, yarg)
+    | xarg <- [(x - 1) .. x],
+      xarg >= 0,
+      xarg < height,
+      yarg <- [(y - 1) .. y],
+      yarg >= 0,
+      yarg < width
+  ]
 
 removeAppliedKnownRules :: Board -> Rules -> Rules
 removeAppliedKnownRules b rules = cornerRulesWithOne
@@ -137,39 +137,12 @@ canApplyPattern b (p : ps) =
 
 getPattersForNextRule :: Board -> Rules -> Patterns
 getPattersForNextRule _ [] = []
-getPattersForNextRule b@(Board (height, width) _) (r@(_, val) : rs)
-  | val == 1 = getPattersForRuleWith1 b r
-  | val == 2 = getPattersForRuleWith2 r
-  | val == 3 = getPattersForRuleWith3 r
-  | otherwise = error "Wrong rule to get pattern"
+getPattersForNextRule b@(Board (height, width) _) (r@(_, val) : rs) =
+  combination val (getCellsForRuleApply b r)
 
-getPattersForRuleWith1 :: Board -> Rule -> [[(Int, Int)]]
-getPattersForRuleWith1 (Board (height, width) _) ((x, y), _)
-  | x == 0 = [[(x, y - 1)], [(x, y)]]
-  | y == 0 = [[(x - 1, y)], [(x, y)]]
-  | x == height = [[(x - 1, y - 1)], [(x - 1, y)]]
-  | y == height = [[(x - 1, y - 1)], [(x, y - 1)]]
-  | otherwise =
-    [ [(x - 1, y - 1)],
-      [(x - 1, y - 1)],
-      [(x - 1, y - 1)],
-      [(x, y - 1)]
-    ]
+getPattersForRule :: Board -> Rule -> Patterns
+getPattersForRule b@(Board (height, width) _) r@(_, val) =
+  combination val (getCellsForRuleApply b r)
 
-getPattersForRuleWith2 :: Rule -> [[(Int, Int)]]
-getPattersForRuleWith2 ((x, y), _) =
-  [ [(x - 1, y - 1), (x - 1, y)],
-    [(x - 1, y - 1), (x, y - 1)],
-    [(x - 1, y - 1), (x, y)],
-    [(x, y - 1), (x, y)],
-    [(x - 1, y), (x, y)],
-    [(x, y - 1), (x - 1, y)]
-  ]
-
-getPattersForRuleWith3 :: Rule -> [[(Int, Int)]]
-getPattersForRuleWith3 ((x, y), _) =
-  [ [(x - 1, y - 1), (x - 1, y)],
-    [(x - 1, y - 1), (x, y - 1)],
-    [(x - 1, y - 1), (x, y)],
-    [(x, y - 1), (x, y)]
-  ]
+getPatternsCombinationForRules :: Board -> Rules -> [Patterns]
+getPatternsCombinationForRules b rules = map (getPattersForRule b) rules
