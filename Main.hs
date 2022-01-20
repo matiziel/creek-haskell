@@ -7,18 +7,17 @@ import Utils
 data Creek = Creek BoardSize Rules deriving (Read, Show)
 
 main = do
-  -- putStrLn "Podaj ścieżkę do pliku:"
-  -- line <- getLine
-  -- contents <- readFile line
-  contents <- readFile "./test_files/test2.txt"
+  putStrLn "Podaj ścieżkę do pliku:"
+  line <- getLine
+  contents <- readFile line
+  -- contents <- readFile "./test_files/test5.txt"
   let creek = read contents :: Creek
   let board = generateBoard (getBoardSize creek)
   let rules = getRules creek
   let knownSolved = solveKnownCells board rules
   let restRules = removeAppliedKnownRules knownSolved rules
   let patternsCombination = getPatternsCombinationForRules knownSolved restRules
-  -- print (combination 2 (getCellsForRuleApply board ((1, 3), 2)))
-  print (sequence patternsCombination)
+  print (solveRest knownSolved restRules)
 
 getBoardSize :: Creek -> BoardSize
 getBoardSize (Creek size _) = size
@@ -81,32 +80,38 @@ removeAppliedKnownRules b rules = cornerRulesWithOne
     edgeRulesWithTwo = filter (not . isEdgeKnownRule b) rulesWithZeroAndFour
     cornerRulesWithOne = filter (not . isCornerKnownRule b) edgeRulesWithTwo
 
--- solveRule :: Board -> Rule -> Board
--- solveRule b@(Board (height, width) cells) ((x, y), 1) = b
--- solveRule b@(Board (height, width) cells) ((x, y), 2) = b
--- solveRule b@(Board (height, width) cells) ((x, y), 3) = b
--- solveRule _ _ = error "Cannot apply this type of rule"
-
 solveRest :: Board -> Rules -> Maybe Board
-solveRest b rules = solve (Just b) rules (getPattersForNextRule b rules) rules
+solveRest b rules = solve (Just b) (getSequenceOfPatterns b rules) rules
 
-solve :: Maybe Board -> Rules -> Patterns -> Rules -> Maybe Board
-solve Nothing _ _ _ = Nothing
-solve (Just b) [] _ allRules =
-  if validateRules b allRules
-    then Just b
-    else Nothing
-solve (Just b) _ [] allRules =
-  if validateRules b allRules
-    then Just b
-    else Nothing
-solve (Just b) (r : rs) (p : ps) allRules =
-  case solve newBoard rs patterns allRules of
-    Nothing -> solve (Just b) (r : rs) ps allRules
-    Just solvedBoard -> Just solvedBoard
+solve :: Maybe Board -> [Patterns] -> Rules -> Maybe Board
+solve Nothing _ _ = Nothing
+solve _ [] _ = Nothing
+solve (Just b) (p : ps) rules =
+  case newBoard of
+    Nothing -> solve (Just b) ps rules
+    Just board -> Just board
   where
-    newBoard = applyPattern b p r
-    patterns = getPattersForNextRule b rs
+    newBoard = applyPatternsWithValidations b p rules
+
+applyPatternsWithValidations :: Board -> Patterns -> Rules -> Maybe Board
+applyPatternsWithValidations b patterns rules =
+  case newBoard of
+    Nothing -> Nothing
+    Just board ->
+      if validateRules board rules && validateCreek board
+        then Just board
+        else Nothing
+  where
+    newBoard = applyPatterns b patterns rules
+
+applyPatterns :: Board -> Patterns -> Rules -> Maybe Board
+applyPatterns b [] [] = Just b
+applyPatterns _ [] _ = Nothing
+applyPatterns _ _ [] = Nothing
+applyPatterns b (p : ps) (r : rs) =
+  case applyPattern b p r of
+    Nothing -> Nothing
+    Just newBoard -> applyPatterns newBoard ps rs
 
 applyPattern :: Board -> Pattern -> Rule -> Maybe Board
 applyPattern b p r =
@@ -135,14 +140,14 @@ canApplyPattern (Board (height, width) _) [] = True
 canApplyPattern b (p : ps) =
   (boardCellValueAt b p /= Empty) && canApplyPattern b ps
 
-getPattersForNextRule :: Board -> Rules -> Patterns
-getPattersForNextRule _ [] = []
-getPattersForNextRule b@(Board (height, width) _) (r@(_, val) : rs) =
-  combination val (getCellsForRuleApply b r)
-
 getPattersForRule :: Board -> Rule -> Patterns
 getPattersForRule b@(Board (height, width) _) r@(_, val) =
   combination val (getCellsForRuleApply b r)
 
 getPatternsCombinationForRules :: Board -> Rules -> [Patterns]
-getPatternsCombinationForRules b rules = map (getPattersForRule b) rules
+getPatternsCombinationForRules b = map (getPattersForRule b)
+
+getSequenceOfPatterns :: Board -> Rules -> [Patterns]
+getSequenceOfPatterns b rules = sequence patterns
+  where
+    patterns = getPatternsCombinationForRules b rules

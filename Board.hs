@@ -93,10 +93,3 @@ getNeighbours b@(Board (height, width) cells) (x, y)
   | y == (width - 1) = [(x - 1, y), (x, y - 1), (x + 1, y)]
   | x == (height - 1) = [(x, y - 1), (x - 1, y), (x, y + 1)]
   | otherwise = [(x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y)]
-
-
-
-
-
-
-
