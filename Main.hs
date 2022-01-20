@@ -18,7 +18,11 @@ main = do
   let restRules = removeAppliedKnownRules knownSolved rules
   let patternsCombination = getPatternsCombinationForRules knownSolved restRules
   let solved = solveRest knownSolved restRules
-  print solved
+  printResult solved
+
+printResult :: Maybe Board -> IO ()
+printResult Nothing = putStrLn "Nie udało się rozwiązać"
+printResult (Just b@(Board (height, width) cells)) = print b
 
 getBoardSize :: Creek -> BoardSize
 getBoardSize (Creek size _) = size

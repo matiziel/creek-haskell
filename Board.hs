@@ -17,9 +17,9 @@ type BoardSize = (Int, Int)
 
 type BoardCellIndex = (Int, Int)
 
-data BoardCell = Empty | Filled | Unknown deriving (Eq, Show)
+data BoardCell = Empty | Filled | Unknown deriving (Eq)
 
-data Board = Board BoardSize [[BoardCell]] deriving (Eq, Show)
+data Board = Board BoardSize [[BoardCell]] deriving (Eq)
 
 generateBoard :: BoardSize -> Board
 generateBoard (height, width) = Board (height, width) cells
@@ -93,3 +93,13 @@ getNeighbours b@(Board (height, width) cells) (x, y)
   | y == (width - 1) = [(x - 1, y), (x, y - 1), (x + 1, y)]
   | x == (height - 1) = [(x, y - 1), (x - 1, y), (x, y + 1)]
   | otherwise = [(x, y - 1), (x - 1, y), (x, y + 1), (x + 1, y)]
+
+instance Show Board where
+  show (Board _ []) = ""
+  show (Board (height, width) (x : xs)) =
+    show x ++ "\n" ++ show (Board (height, width) xs)
+
+instance Show BoardCell where
+  show Empty = " "
+  show Unknown = " "
+  show Filled = "x"
